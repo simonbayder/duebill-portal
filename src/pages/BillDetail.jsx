@@ -67,7 +67,7 @@ export default function BillDetail() {
     const vendorItems = items.filter(i => i.vendor_email)
     for (const item of vendorItems) {
       try {
-        await sendVendorNotificationEmail({ settings, dueBill: bill, item, vendorEmail: item.vendor_email, vendorName: item.vendor_name })
+        await sendVendorNotificationEmail({ dueBill: bill, item, vendorEmail: item.vendor_email, vendorName: item.vendor_name })
       } catch { }
     }
     if (vendorItems.length) toast.success(`${vendorItems.length} vendor${vendorItems.length > 1 ? 's' : ''} notified by email`)
