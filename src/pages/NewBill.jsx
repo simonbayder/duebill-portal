@@ -110,7 +110,7 @@ export default function NewBill() {
 
       if (!asDraft) {
         try {
-          await sendManagerApprovalEmail({ settings, dueBill: bill, items, submitterName: profile.full_name })
+          await sendManagerApprovalEmail({ dueBill: bill, items, submitterName: profile.full_name })
           toast.success('Due bill submitted — manager notified by email')
         } catch {
           toast.success('Due bill submitted (email notification failed — check Settings)')
