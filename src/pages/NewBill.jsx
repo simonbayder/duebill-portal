@@ -104,7 +104,7 @@ export default function NewBill() {
 
       if (error) throw error
 
-      const lineItems = items.map(({ _id, ...i }) => ({ ...i, due_bill_id: bill.id }))
+      const lineItems = items.map(({ _id, ...i }) => ({ ...i, due_bill_id: bill.id, vendor_id: i.vendor_id || null, bucket_id: i.bucket_id || null, vendor_name: i.vendor_name || null, vendor_email: i.vendor_email || null }))
       const { error: itemsError } = await supabase.from('due_bill_items').insert(lineItems)
       if (itemsError) throw itemsError
 
