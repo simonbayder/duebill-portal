@@ -1,17 +1,14 @@
 import emailjs from '@emailjs/browser'
 import { supabase } from './supabase'
 
-let initialized = false
-
 async function getSettings() {
   const { data } = await supabase.from('settings').select('*').single()
   return data || {}
 }
 
 function init(publicKey) {
-  if (publicKey && !initialized) {
+  if (publicKey) {
     emailjs.init(publicKey)
-    initialized = true
   }
 }
 
