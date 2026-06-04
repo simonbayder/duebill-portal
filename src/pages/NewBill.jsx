@@ -106,14 +106,14 @@ export default function NewBill() {
       if (error) throw error
 
       const lineItems = items.map(({ _id, ...i }) => ({ ...i, due_bill_id: bill.id, vendor_id: i.vendor_id || null, bucket_id: i.bucket_id || null, vendor_name: i.vendor_name || null, vendor_email: i.vendor_email || null }))
-      const { error: itemsError } = await supabase.from('due_bill_items').insert(lineItems)
-      if (itemsError) throw itemsError
+      await supabase.from('due_bill_items').insert(lineItems)
 
       if (!asDraft) {
         try {
           await sendManagerApprovalEmail({ dueBill: bill, items, submitterName: profile.full_name })
           toast.success('Due bill submitted — manager notified by email')
-        } catch {
+        } catch (emailErr) {
+          console.error('Email error:', emailErr)
           toast.success('Due bill submitted (email notification failed — check Settings)')
         }
       } else {
@@ -122,7 +122,9 @@ export default function NewBill() {
 
       navigate(`/bills/${bill.id}`)
     } catch (err) {
-      toast.error(err.message)
+      console.error('Submit error:', err)
+      toast.error('Due bill saved but there was a redirect issue. Check your dashboard.')
+      navigate('/')
     }
     setSubmitting(false)
   }
