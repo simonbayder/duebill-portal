@@ -114,8 +114,10 @@ export default function NewBill() {
         .order('created_at', { ascending: false })
         .limit(1)
         .single()
-      if (fetchError) throw fetchError
-      if (!bill) throw new Error('Could not retrieve bill after save')
+      if (fetchError) { console.error('FETCH ERROR:', fetchError); throw fetchError }
+if (!bill) { console.error('NO BILL RETURNED'); throw new Error('no bill') }
+console.log('BILL ID:', bill.id)
+
 
       const lineItems = items.map(({ _id, ...i }) => ({ ...i, due_bill_id: bill.id, vendor_id: i.vendor_id || null, bucket_id: i.bucket_id || null, vendor_name: i.vendor_name || null, vendor_email: i.vendor_email || null }))
       await supabase.from('due_bill_items').insert(lineItems)
