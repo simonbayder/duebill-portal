@@ -95,17 +95,27 @@ export default function NewBill() {
     setSubmitting(true)
     try {
       const cleanForm = Object.fromEntries(Object.entries(form).map(([k,v]) => [k, v || null]))
-      const { data: bill, error } = await supabase.from('due_bills').insert({
+      
+      // Insert bill
+      const { error: insertError } = await supabase.from('due_bills').insert({
         ...cleanForm,
         salesperson_id: profile.id || null,
         salesperson_name: profile.full_name || null,
         status: asDraft ? 'draft' : 'pending_approval',
         tax_rate: taxRate
-      }).select().single()
+      })
+      if (insertError) throw insertError
 
-      if (error) throw error
-      console.log('Bill created:', bill)
-      if (!bill || !bill.id) throw new Error('Bill created but ID not returned - check Supabase select permissions')
+      // Fetch the bill we just created
+      const { data: bill, error: fetchError } = await supabase
+        .from('due_bills')
+        .select('*')
+        .eq('salesperson_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      if (fetchError) throw fetchError
+      if (!bill) throw new Error('Could not retrieve bill after save')
 
       const lineItems = items.map(({ _id, ...i }) => ({ ...i, due_bill_id: bill.id, vendor_id: i.vendor_id || null, bucket_id: i.bucket_id || null, vendor_name: i.vendor_name || null, vendor_email: i.vendor_email || null }))
       await supabase.from('due_bill_items').insert(lineItems)
