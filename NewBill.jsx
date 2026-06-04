@@ -81,7 +81,6 @@ export default function NewBill() {
 
     setSubmitting(true)
     try {
-      // Step 1: Insert the bill
       const billData = {
         customer_name: form.customer_name,
         customer_email: form.customer_email || null,
@@ -104,26 +103,20 @@ export default function NewBill() {
         tax_rate: taxRate
       }
 
-      const insertResult = await supabase.from('due_bills').insert(billData)
-      if (insertResult.error) {
-        toast.error('Error saving bill: ' + insertResult.error.message)
+      // ✅ Insert and get the new bill back in one step
+      const { data: bill, error: insertError } = await supabase
+        .from('due_bills')
+        .insert(billData)
+        .select()
+        .single()
+
+      if (insertError) {
+        toast.error('Error saving bill: ' + insertError.message)
         setSubmitting(false)
         return
       }
 
-      // Step 2: Fetch the bill we just created
-      await new Promise(r => setTimeout(r, 500)) // small delay for trigger
-      const { data: bills } = await supabase
-        .from('due_bills')
-        .select('*')
-        .eq('salesperson_id', profile.id)
-        .eq('status', asDraft ? 'draft' : 'pending_approval')
-        .order('created_at', { ascending: false })
-        .limit(1)
-
-      const bill = bills && bills[0]
-
-      // Step 3: Save line items if we got the bill
+      // Save line items
       if (bill && bill.id) {
         const lineItems = items.map(({ _id, ...i }) => ({
           ...i,
@@ -135,7 +128,7 @@ export default function NewBill() {
         }))
         await supabase.from('due_bill_items').insert(lineItems)
 
-        // Step 4: Send email
+        // Send email
         if (!asDraft) {
           try {
             await sendManagerApprovalEmail({ dueBill: bill, items, submitterName: profile.full_name })
