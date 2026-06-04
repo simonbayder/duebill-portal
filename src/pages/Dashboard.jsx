@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { format } from 'date-fns'
+import toast from 'react-hot-toast'
 
 function StatusBadge({ status }) {
   return <span className={`badge badge-${status}`}>{status.replace('_', ' ')}</span>
@@ -14,6 +15,8 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, completed: 0 })
   const [recent, setRecent] = useState([])
   const [loading, setLoading] = useState(true)
+
+  const isManager = ['manager','accounting'].includes(profile?.role)
 
   useEffect(() => {
     load()
@@ -35,6 +38,18 @@ export default function Dashboard() {
       setRecent(data.slice(0, 8))
     }
     setLoading(false)
+  }
+
+  async function handleDelete(e, billId) {
+    e.stopPropagation()
+    if (!window.confirm('Permanently delete this due bill? This cannot be undone.')) return
+    await supabase.from('due_bill_items').delete().eq('due_bill_id', billId)
+    await supabase.from('due_bill_images').delete().eq('due_bill_id', billId)
+    await supabase.from('due_bill_signatures').delete().eq('due_bill_id', billId)
+    const { error } = await supabase.from('due_bills').delete().eq('id', billId)
+    if (error) return toast.error('Failed to delete: ' + error.message)
+    toast.success('Due bill deleted')
+    load()
   }
 
   const statCards = [
@@ -82,6 +97,7 @@ export default function Dashboard() {
               <table>
                 <thead><tr>
                   <th>Bill #</th><th>Customer</th><th>Vehicle</th><th>Status</th><th>Salesperson</th><th>Date</th>
+                  {isManager && <th></th>}
                 </tr></thead>
                 <tbody>
                   {recent.map(b => (
@@ -92,6 +108,17 @@ export default function Dashboard() {
                       <td><StatusBadge status={b.status} /></td>
                       <td style={{ color:'var(--text-2)' }}>{b.salesperson_name}</td>
                       <td style={{ color:'var(--text-3)',fontSize:12 }}>{b.created_at ? format(new Date(b.created_at), 'MMM d, yyyy') : '—'}</td>
+                      {isManager && (
+                        <td onClick={e => e.stopPropagation()}>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={e => handleDelete(e, b.id)}
+                            style={{ fontSize:11,padding:'3px 8px' }}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
