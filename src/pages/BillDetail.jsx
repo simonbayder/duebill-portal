@@ -33,7 +33,10 @@ export default function BillDetail() {
   const isVendor = profile?.role === 'vendor'
   const canSeeCost = isManager
 
-  useEffect(() => { load() }, [id])
+  useEffect(() => { 
+    if (id && id.length === 36) load()
+    else setLoading(false)
+  }, [id])
 
   async function load() {
     const [{ data: b }, { data: its }, { data: imgs }, { data: sig }, { data: cfg }] = await Promise.all([
