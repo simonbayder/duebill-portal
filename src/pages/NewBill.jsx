@@ -104,6 +104,8 @@ export default function NewBill() {
       }).select().single()
 
       if (error) throw error
+      console.log('Bill created:', bill)
+      if (!bill || !bill.id) throw new Error('Bill created but ID not returned - check Supabase select permissions')
 
       const lineItems = items.map(({ _id, ...i }) => ({ ...i, due_bill_id: bill.id, vendor_id: i.vendor_id || null, bucket_id: i.bucket_id || null, vendor_name: i.vendor_name || null, vendor_email: i.vendor_email || null }))
       await supabase.from('due_bill_items').insert(lineItems)
