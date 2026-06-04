@@ -94,10 +94,11 @@ export default function NewBill() {
 
     setSubmitting(true)
     try {
+      const cleanForm = Object.fromEntries(Object.entries(form).map(([k,v]) => [k, v || null]))
       const { data: bill, error } = await supabase.from('due_bills').insert({
-        ...form,
-        salesperson_id: profile.id,
-        salesperson_name: profile.full_name,
+        ...cleanForm,
+        salesperson_id: profile.id || null,
+        salesperson_name: profile.full_name || null,
         status: asDraft ? 'draft' : 'pending_approval',
         tax_rate: taxRate
       }).select().single()
