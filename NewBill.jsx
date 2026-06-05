@@ -128,6 +128,36 @@ export default function NewBill() {
     if (cfg) setTaxRate(Number(cfg.default_tax_rate || 0.0775))
   }
 
+  const [vinLoading, setVinLoading] = useState(false)
+
+  async function decodeVin(vin) {
+    if (!vin || vin.length !== 17) return
+    setVinLoading(true)
+    try {
+      const res = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/${vin}?format=json`)
+      const data = await res.json()
+      const results = data.Results
+      const get = (var_) => results.find(r => r.Variable === var_)?.Value
+      const year = get('Model Year')
+      const make = get('Make')
+      const model = get('Model')
+      if (make && make !== 'null' && make !== null) {
+        setForm(f => ({
+          ...f,
+          vehicle_year: year && year !== 'null' ? year : f.vehicle_year,
+          vehicle_make: make,
+          vehicle_model: model && model !== 'null' ? model : f.vehicle_model,
+        }))
+        toast.success(`VIN decoded: ${year} ${make} ${model}`)
+      } else {
+        toast.error('VIN not recognized — please fill in manually')
+      }
+    } catch (err) {
+      toast.error('VIN decode failed — check your connection')
+    }
+    setVinLoading(false)
+  }
+
   function setField(k, v) {
     setForm(f => ({ ...f, [k]: v }))
     if (k === 'customer_zip') {
@@ -320,7 +350,12 @@ export default function NewBill() {
             <div className="form-group"><label className="form-label">Color</label>
               <input className="form-input" value={form.vehicle_color} onChange={e => setField('vehicle_color', e.target.value)} placeholder="Iconic Silver" /></div>
             <div className="form-group"><label className="form-label">VIN</label>
-              <input className="form-input" value={form.vehicle_vin} onChange={e => setField('vehicle_vin', e.target.value)} placeholder="17-character VIN" style={{ fontFamily:'var(--mono)',fontSize:13 }} /></div>
+              <div style={{ position:'relative' }}>
+                <input className="form-input" value={form.vehicle_vin} onChange={e => setField('vehicle_vin', e.target.value)} onBlur={e => decodeVin(e.target.value)} placeholder="17-character VIN" style={{ fontFamily:'var(--mono)',fontSize:13,paddingRight: vinLoading ? 36 : undefined }} />
+                {vinLoading && <span style={{ position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',fontSize:11,color:'var(--text-3)' }}>⏳</span>}
+              </div>
+              <span style={{ fontSize:11,color:'var(--text-3)',marginTop:2 }}>Auto-fills year, make &amp; model</span>
+            </div>
             <div className="form-group"><label className="form-label">Stock #</label>
               <input className="form-input" value={form.vehicle_stock} onChange={e => setField('vehicle_stock', e.target.value)} /></div>
           </div>
