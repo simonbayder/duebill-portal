@@ -29,6 +29,9 @@ export default function BillDetail() {
   const [showPrint, setShowPrint] = useState(false)
   const [activeTab, setActiveTab] = useState('details')
 
+  const [showSchedule, setShowSchedule] = useState(false)
+  const [scheduledDate, setScheduledDate] = useState('')
+
   const isManager = ['manager','accounting'].includes(profile?.role)
   const isVendor = profile?.role === 'vendor'
   const canSeeCost = isManager
@@ -80,6 +83,12 @@ export default function BillDetail() {
     if (!rejectionReason.trim()) return toast.error('Please provide a rejection reason')
     await updateStatus('rejected', { rejection_reason: rejectionReason })
     setShowReject(false)
+  }
+
+  async function handleSchedule() {
+    if (!scheduledDate) return toast.error('Please select a scheduled date')
+    await updateStatus('scheduled', { scheduled_date: scheduledDate })
+    setShowSchedule(false)
   }
 
   async function updateItemStatus(itemId, status) {
@@ -160,7 +169,8 @@ export default function BillDetail() {
               <button className="btn btn-danger" onClick={() => setShowReject(!showReject)}>Reject</button>
             </>
           )}
-          {isManager && bill.status === 'approved' && <button className="btn" onClick={() => updateStatus('in_progress')}>Mark in progress</button>}
+          {isManager && bill.status === 'approved' && <button className="btn" onClick={() => setShowSchedule(!showSchedule)}>Schedule</button>}
+          {isManager && bill.status === 'scheduled' && <button className="btn" onClick={() => updateStatus('in_progress')}>Mark in progress</button>}
           {isManager && bill.status === 'in_progress' && <button className="btn btn-success" onClick={() => updateStatus('completed')}>Mark completed</button>}
           {isManager && bill.status === 'completed' && <button className="btn" onClick={() => updateStatus('closed')}>Close bill</button>}
           {isManager && <button className="btn btn-danger" onClick={handleDelete}>Delete</button>}
@@ -180,6 +190,19 @@ export default function BillDetail() {
           <div style={{ background:'var(--red-dim)',border:'1px solid rgba(232,91,91,0.3)',borderRadius:'var(--radius)',padding:'12px 16px',marginBottom:16 }}>
             <div style={{ fontWeight:600,fontSize:13,color:'var(--red)' }}>Rejected</div>
             <div style={{ fontSize:13,marginTop:4,color:'var(--text-2)' }}>{bill.rejection_reason}</div>
+          </div>
+        )}
+        {showSchedule && (
+          <div className="card" style={{ marginBottom:16 }}>
+            <div className="card-title">Schedule this job</div>
+            <div className="form-group" style={{ maxWidth:240 }}>
+              <label className="form-label">Scheduled date</label>
+              <input className="form-input" type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} />
+            </div>
+            <div className="row" style={{ marginTop:12 }}>
+              <button className="btn btn-primary" onClick={handleSchedule}>Confirm schedule</button>
+              <button className="btn" onClick={() => setShowSchedule(false)}>Cancel</button>
+            </div>
           </div>
         )}
         {showReject && (
@@ -225,6 +248,7 @@ export default function BillDetail() {
                 {bill.vehicle_vin && <div style={{ fontFamily:'var(--mono)',fontSize:12,color:'var(--text-2)' }}>VIN: {bill.vehicle_vin}</div>}
                 {bill.vehicle_stock && <div style={{ fontSize:12,color:'var(--text-3)' }}>Stock #: {bill.vehicle_stock}</div>}
                 {bill.sale_date && <div style={{ fontSize:12,color:'var(--text-3)',marginTop:4 }}>Sale date: {format(new Date(bill.sale_date),'MMM d, yyyy')}</div>}
+                {bill.scheduled_date && <div style={{ fontSize:12,color:'var(--blue)',marginTop:4,fontWeight:500 }}>📅 Scheduled: {format(new Date(bill.scheduled_date),'MMM d, yyyy')}</div>}
               </div>
             </div>
 
