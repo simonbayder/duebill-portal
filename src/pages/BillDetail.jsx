@@ -90,6 +90,17 @@ export default function BillDetail() {
     load()
   }
 
+  async function handleDelete() {
+    if (!window.confirm('Are you sure you want to permanently delete this due bill? This cannot be undone.')) return
+    await supabase.from('due_bill_items').delete().eq('due_bill_id', id)
+    await supabase.from('due_bill_images').delete().eq('due_bill_id', id)
+    await supabase.from('due_bill_signatures').delete().eq('due_bill_id', id)
+    const { error } = await supabase.from('due_bills').delete().eq('id', id)
+    if (error) return toast.error('Failed to delete: ' + error.message)
+    toast.success('Due bill deleted')
+    navigate('/bills')
+  }
+
   async function saveSignature({ dataUrl, signedName }) {
     const existing = signature
     if (existing) {
@@ -152,6 +163,7 @@ export default function BillDetail() {
           {isManager && bill.status === 'approved' && <button className="btn" onClick={() => updateStatus('in_progress')}>Mark in progress</button>}
           {isManager && bill.status === 'in_progress' && <button className="btn btn-success" onClick={() => updateStatus('completed')}>Mark completed</button>}
           {isManager && bill.status === 'completed' && <button className="btn" onClick={() => updateStatus('closed')}>Close bill</button>}
+          {isManager && <button className="btn btn-danger" onClick={handleDelete}>Delete</button>}
         </div>
       </div>
 
@@ -202,6 +214,7 @@ export default function BillDetail() {
               <div className="card">
                 <div className="card-title">Customer</div>
                 <div style={{ fontSize:14,fontWeight:500,marginBottom:4 }}>{bill.customer_name}</div>
+                {bill.deal_number && <div style={{ fontSize:13,color:'var(--text-2)' }}>Deal #: {bill.deal_number}</div>}
                 {bill.customer_email && <div style={{ fontSize:13,color:'var(--text-2)' }}>{bill.customer_email}</div>}
                 {bill.customer_phone && <div style={{ fontSize:13,color:'var(--text-2)' }}>{bill.customer_phone}</div>}
                 {bill.customer_address && <div style={{ fontSize:12,color:'var(--text-3)',marginTop:6 }}>{bill.customer_address}, {bill.customer_city}, {bill.customer_state} {bill.customer_zip}</div>}
